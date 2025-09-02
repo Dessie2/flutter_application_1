@@ -12,12 +12,12 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
-      debugShowCheckedModeBanner: false,
+      title: 'Flutter Demo jiji',
+      debugShowCheckedModeBanner: false, //quita la banderita "debug" de la app
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const LoginScreens (title : '',),
+      home: const LoginScreen(title: '',),
     );
   }
 }
