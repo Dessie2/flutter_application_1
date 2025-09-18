@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:rive/rive.dart';
 
@@ -9,17 +10,89 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  // Cerebro de la lógica de las animaciones
+  // Rive controller
   StateMachineController? controller;
 
   // STATEMACHINE INPUTS
-  SMIBool? isCheking; // activa al oso chismoso
-  SMIBool? isHandsUp; // activa al oso tapandose los ojos
-  SMITrigger? triggerSuccess; // activa al oso feliz
-  SMITrigger? triggerFail; // activa al oso triste
-  SMINumber? numlook; // mueve los ojos al escribir email
+  SMIBool? isCheking;
+  SMIBool? isHandsUp;
+  SMITrigger? triggerSuccess;
+  SMITrigger? triggerFail;
+  SMINumber? numlook;
 
+  // TextField focus
+  final FocusNode _emailFocus = FocusNode();
+  final FocusNode _passwordFocus = FocusNode();
+
+  // Password visibility
   bool _isPasswordVisible = false;
+
+  // Timers
+  Timer? _emailIdleTimer;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // EMAIL focus listener
+    _emailFocus.addListener(() {
+      if (_emailFocus.hasFocus) {
+        // Activar oso chismoso esperando que escribas
+        if (isCheking != null) isCheking!.change(true);
+        if (isHandsUp != null) isHandsUp!.change(false);
+
+        // Iniciar timer de 3 segundos para mirar al frente si no escribe
+        _emailIdleTimer?.cancel();
+        _emailIdleTimer = Timer(const Duration(seconds: 3), () {
+          if (numlook != null) numlook!.value = 0;
+          if (isCheking != null) isCheking!.change(false);
+        });
+      } else {
+        // Salir del email: mirar al frente
+        _emailIdleTimer?.cancel();
+        if (numlook != null) numlook!.value = 0;
+        if (isCheking != null) isCheking!.change(false);
+      }
+    });
+
+    // PASSWORD focus listener
+    _passwordFocus.addListener(() {
+      if (_passwordFocus.hasFocus) {
+        // Taparse los ojos apenas el cursor esté en password
+        if (isHandsUp != null) isHandsUp!.change(true);
+        if (isCheking != null) isCheking!.change(false);
+      } else {
+        // Al salir del password, bajar manos
+        if (isHandsUp != null) isHandsUp!.change(false);
+      }
+    });
+  }
+
+  void _onEmailChanged(String value) {
+    // Cancelar timer de idle al escribir
+    _emailIdleTimer?.cancel();
+
+    // Activar oso chismoso mientras escribe
+    if (isCheking != null) isCheking!.change(true);
+    if (isHandsUp != null) isHandsUp!.change(false);
+
+    // Actualizar posición de ojos en vivo
+    if (numlook != null) numlook!.value = value.length.toDouble();
+
+    // Reiniciar timer de 3 segundos para mirar al frente si deja de escribir
+    _emailIdleTimer = Timer(const Duration(seconds: 3), () {
+      if (numlook != null) numlook!.value = 0;
+      if (isCheking != null) isCheking!.change(false);
+    });
+  }
+
+  @override
+  void dispose() {
+    _emailFocus.dispose();
+    _passwordFocus.dispose();
+    _emailIdleTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +118,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       "Login Machine",
                     );
                     if (controller == null) return;
-
                     artboard.addController(controller!);
 
                     // Vincular inputs
@@ -63,19 +135,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
               // EMAIL
               TextField(
+                focusNode: _emailFocus,
                 keyboardType: TextInputType.emailAddress,
-                onChanged: (value) {
-                  // Mantener manos abajo
-                  if (isHandsUp != null) isHandsUp!.change(false);
-
-                  // Activar oso chismoso
-                  if (isCheking != null) isCheking!.change(true);
-
-                  // Mover ojos del oso según longitud del texto
-                  if (numlook != null) {
-                    numlook!.value = value.length.toDouble();
-                  }
-                },
+                onChanged: _onEmailChanged,
                 decoration: InputDecoration(
                   hintText: "Email",
                   prefixIcon: const Icon(Icons.mail),
@@ -88,12 +150,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
               // PASSWORD
               TextField(
+                focusNode: _passwordFocus,
                 onChanged: (value) {
-                  // Desactivar oso chismoso
-                  if (isCheking != null) isCheking!.change(false);
-
-                  // Subir manos del oso
-                  if (isHandsUp != null) isHandsUp!.change(true);
+                  // Mientras escribe password, el oso ya está tapándose los ojos
                 },
                 obscureText: !_isPasswordVisible,
                 decoration: InputDecoration(
@@ -116,9 +175,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
 
-              // OLVIDÓ PASSWORD
+              const SizedBox(height: 10),
               SizedBox(
                 width: size.width,
                 child: const Text(
@@ -142,13 +200,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: TextStyle(color: Colors.white),
                 ),
                 onPressed: () {
-                  // EJEMPLO: activar éxito o fallo
-                  // Aquí puedes agregar validación real de email/password
-                  if (triggerSuccess != null) {
-                    triggerSuccess!.fire();
-                  }
-                  // Si quieres usar triggerFail en caso de error:
-                  // if (triggerFail != null) triggerFail!.fire();
+                  if (triggerSuccess != null) triggerSuccess!.fire();
                 },
               ),
               const SizedBox(height: 10),
