@@ -74,4 +74,5 @@ pubspec.yaml             # Dependencies and Flutter configuration
 
 ```
 #
-🎨 Gif:
+🎨 Gif: ![flutter_application_1](assets/gif.gif)
+Rive animation used in this project: https://rive.app/marketplace/3645-7621-remix-of-login-machine/ 
